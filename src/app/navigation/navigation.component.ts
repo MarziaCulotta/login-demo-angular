@@ -1,4 +1,7 @@
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
+import { map } from 'rxjs/operators';
+import { AuthenticationService } from '../services/authentication.service';
+import { TitleService } from '../services/title.service';
 
 @Component({
   selector: 'app-navigation',
@@ -7,9 +10,25 @@ import { Component, OnInit } from '@angular/core';
 })
 export class NavigationComponent implements OnInit {
 
-  constructor() { }
+  title: string = '';
+  user?: string;
+
+  constructor(
+    private readonly titleService: TitleService,
+    private readonly ref: ChangeDetectorRef,
+    private readonly authenticationService: AuthenticationService
+  ) { }
 
   ngOnInit(): void {
+    this.titleService.title
+      .pipe(
+        map(title => {
+          this.title = title;
+          this.ref.detectChanges();
+        })
+      )
+      .subscribe();
+      this.user = this.authenticationService.getAuthentication()?.username;
   }
 
 }

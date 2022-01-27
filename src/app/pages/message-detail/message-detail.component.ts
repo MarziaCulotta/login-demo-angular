@@ -1,4 +1,9 @@
 import { Component, OnInit } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
+import { catchError, map, switchMap } from 'rxjs/operators';
+import { Message } from 'src/app/model/message';
+import { MessageService } from 'src/app/services/message.service';
+import { TitleService } from 'src/app/services/title.service';
 
 @Component({
   selector: 'app-message-detail',
@@ -7,9 +12,40 @@ import { Component, OnInit } from '@angular/core';
 })
 export class MessageDetailComponent implements OnInit {
 
-  constructor() { }
+  message?: Message;
+
+  constructor(
+    private readonly route: ActivatedRoute,
+    private readonly messageService: MessageService,
+    private readonly router: Router,
+    private readonly titleService: TitleService
+  ) { }
 
   ngOnInit(): void {
+    this.route.params
+      .pipe(
+        switchMap(params => this.messageService.get(+params.id)),
+        catchError(err => {
+          this.router.navigate(['/']);
+          throw err;
+        }),
+        map((message: Message) => {
+          this.message = message;
+          this.titleService.title.next(`Messaggio ${message.id}`);
+        })
+      )
+      .subscribe();
+  }
+
+  delete(message: Message): void {
+    this.messageService.remove(message.id)
+      .subscribe(
+        () => {
+          console.log(`${message.title} rimosso!`);
+          this.router.navigate(['/']);
+        },
+        err => console.error(err)
+      );
   }
 
 }

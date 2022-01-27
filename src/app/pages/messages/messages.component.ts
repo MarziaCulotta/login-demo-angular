@@ -1,6 +1,11 @@
 import { Component, OnInit } from '@angular/core';
-import { MOCK_MESSAGES } from 'src/app/mock/mock-messages';
+import { MatDialog } from '@angular/material/dialog';
+import { Observable, of } from 'rxjs';
+import { map, switchMap } from 'rxjs/operators';
+import { CreateMessageDialogComponent } from 'src/app/components/create-message-dialog/create-message-dialog.component';
 import { Message } from 'src/app/model/message';
+import { MessageService } from 'src/app/services/message.service';
+import { TitleService } from 'src/app/services/title.service';
 
 @Component({
   selector: 'app-messages',
@@ -9,14 +14,32 @@ import { Message } from 'src/app/model/message';
 })
 export class MessagesComponent implements OnInit {
 
-  messages: Message[];
+  messages: Message[] = [];
 
-  constructor() {
-    this.messages = MOCK_MESSAGES;
-  }
+  constructor(
+    private readonly messageService: MessageService,
+    private readonly dialog: MatDialog,
+    private readonly titleService: TitleService
+  ) { }
 
   ngOnInit(): void {
+    this.messageService.getAll()
+      .pipe(
+        map((messages: Message[]) => this.messages = messages)
+      )
+      .subscribe();
+      this.titleService.title.next('Messaggi');
   }
 
+  create(): void {
+    this.dialog.open(CreateMessageDialogComponent)
+      .afterClosed()
+      .pipe(
+        switchMap((message?: Message) => message ? this.messageService.add(message) : new Observable(sub => sub.complete()))
+      )
+      .subscribe(
+        (message: any) => console.log(`Messaggio creato: ${message.id}`)
+      );
+  }
 
 }
